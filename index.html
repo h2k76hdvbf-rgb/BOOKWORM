@@ -762,16 +762,8 @@
         verbose: false
       });
       html5Qr.start(
-        { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
-        {
-          fps: 15,
-          disableFlip: false,
-          qrbox: (viewfinderWidth, viewfinderHeight) => {
-            const w = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.9);
-            return { width: w, height: Math.floor(w * 0.45) };
-          },
-          experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-        },
+        { facingMode: "environment" },
+        { fps: 12, disableFlip: false },
         (decodedText) => handleDetected(decodedText),
         () => {} /* ignore per-frame miss */
       ).catch(() => {
