@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Library</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+
+  #lib-root {
+    --paper: #EFE7D6;
+    --paper-raised: #F8F2E4;
+    --paper-dark: #E2D6BC;
+    --ink: #241F17;
+    --ink-soft: #6b5f4c;
+    --brick: #9C4A3A;
+    --brick-deep: #7c3a2d;
+    --sage: #566E52;
+    --gold: #A9822F;
+    --line: #C9BB9A;
+    --line-soft: #DACFB4;
+    font-family: 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      radial-gradient(38% 32% at 12% 8%, rgba(255,205,120,0.32), transparent 72%),
+      radial-gradient(34% 28% at 88% 14%, rgba(150,210,196,0.30), transparent 72%),
+      radial-gradient(38% 32% at 82% 92%, rgba(255,178,190,0.26), transparent 72%),
+      radial-gradient(34% 28% at 8% 88%, rgba(160,196,224,0.28), transparent 72%),
+      radial-gradient(rgba(36,31,23,0.04) 1px, transparent 1px);
+    background-size: auto, auto, auto, auto, 3px 3px;
+    background-attachment: fixed, fixed, fixed, fixed, auto;
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  #lib-root *, #lib-root *::before, #lib-root *::after { box-sizing: border-box; }
+
+  .lib-serif { font-family: 'Source Serif 4', serif; }
+  .lib-mono { font-family: 'IBM Plex Mono', monospace; }
+
+  /* ---------- Header ---------- */
+  .lib-header {
+    padding: 28px 20px 18px;
+    border-bottom: 2px solid var(--ink);
+    background: linear-gradient(180deg, var(--paper-raised) 0%, #F3ECDC 100%);
+    box-shadow: 0 2px 10px rgba(36,31,23,0.08);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+  }
+  .lib-header-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    max-width: 720px;
+    margin: 0 auto;
+  }
+  .lib-title {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .lib-count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .lib-count b { color: var(--ink); font-weight: 500; }
+
+  .lib-toolbar {
+    max-width: 720px;
+    margin: 16px auto 0;
+    display: flex;
+    gap: 8px;
+  }
+  .lib-search {
+    flex: 1;
+    border: 1.5px solid var(--ink);
+    background: var(--paper);
+    border-radius: 3px;
+    padding: 9px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .lib-search:focus { outline: none; border-color: var(--brick); }
+  .lib-search::placeholder { color: var(--ink-soft); }
+
+  .lib-btn {
+    border: 1.5px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper-raised);
+    border-radius: 3px;
+    padding: 9px 16px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.08s ease;
+  }
+  .lib-btn:active { transform: scale(0.97); }
+  .lib-btn.secondary {
+    background: transparent;
+    color: var(--ink);
+  }
+  .lib-btn.brick { background: var(--brick); border-color: var(--brick); color: #fff; }
+
+  /* ---------- Filter chips ---------- */
+  .lib-chiprow {
+    max-width: 720px;
+    margin: 14px auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .lib-chip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    padding: 5px 11px;
+    border: 1.3px solid var(--line);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .lib-chip.active {
+    border-color: var(--ink);
+    background: var(--ink);
+    color: var(--paper-raised);
+  }
+
+  /* ---------- Body / list ---------- */
+  .lib-body {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 22px 20px 100px;
+  }
+  .lib-letter {
+    font-family: 'Source Serif 4', serif;
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--brick-deep);
+    margin: 26px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .lib-letter:first-child { margin-top: 0; }
+
+  .lib-card {
+    display: flex;
+    gap: 14px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line-soft);
+    border-left: 3px solid var(--sage);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    align-items: flex-start;
+    box-shadow: 0 1px 3px rgba(36,31,23,0.08), 0 1px 1px rgba(36,31,23,0.04);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+  .lib-card:active { box-shadow: 0 1px 2px rgba(36,31,23,0.08); transform: translateY(1px); }
+  .lib-card.cat-adults { border-left-color: var(--gold); }
+  .lib-card.cat-mixed { border-left-color: var(--brick); }
+
+  .lib-card-cover {
+    width: 40px;
+    height: 58px;
+    flex-shrink: 0;
+    background: var(--paper-dark);
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    object-fit: cover;
+  }
+  .lib-card-main { flex: 1; min-width: 0; }
+  .lib-card-title {
+    font-family: 'Source Serif 4', serif;
+    font-weight: 600;
+    font-size: 16.5px;
+    line-height: 1.25;
+    margin: 0 0 2px;
+  }
+  .lib-card-author {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 0 0 7px;
+  }
+  .lib-card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .lib-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    padding: 2px 7px;
+    background: var(--paper-dark);
+    color: var(--ink-soft);
+    border-radius: 3px;
+  }
+  .lib-card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .lib-icon-btn {
+    border: none;
+    background: none;
+    cursor: pointer;
+    padding: 4px;
+    color: var(--ink-soft);
+    font-size: 15px;
+    line-height: 1;
+  }
+  .lib-icon-btn:hover { color: var(--brick); }
+
+  .lib-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink-soft);
+  }
+  .lib-empty .lib-serif { font-size: 19px; color: var(--ink); display: block; margin-bottom: 6px; }
+
+  /* ---------- Floating add button ---------- */
+  .lib-fab-row {
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    z-index: 30;
+    width: min(720px, calc(100% - 32px));
+    justify-content: center;
+  }
+  .lib-fab {
+    flex: 1;
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    padding: 18px 20px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 16.5px;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(36,31,23,0.22);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+  }
+  .lib-fab:active { transform: translateY(1px) scale(0.98); box-shadow: 0 3px 10px rgba(36,31,23,0.18); }
+  .lib-fab.scan { background: var(--brick); color: #fff; border-color: var(--brick-deep); }
+  .lib-fab.manual { background: var(--ink); color: var(--paper-raised); border-color: var(--ink); }
+
+  /* ---------- Modal ---------- */
+  .lib-overlay {
+    position: fixed; inset: 0;
+    background: rgba(36,31,23,0.55);
+    display: flex; align-items: flex-end; justify-content: center;
+    z-index: 100;
+  }
+  .lib-modal {
+    background: var(--paper-raised);
+    width: min(720px, 100%);
+    max-height: 92vh;
+    overflow-y: auto;
+    border-radius: 14px 14px 0 0;
+    border-top: 3px solid var(--ink);
+    padding: 20px 20px 28px;
+    box-shadow: 0 -8px 30px rgba(36,31,23,0.25);
+  }
+  .lib-modal-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 16px;
+  }
+  .lib-modal-title { font-family: 'Source Serif 4', serif; font-size: 20px; font-weight: 600; margin: 0; }
+  .lib-close { border: none; background: none; font-size: 20px; cursor: pointer; color: var(--ink-soft); padding: 4px 8px; }
+
+  .lib-field { margin-bottom: 14px; }
+  .lib-label {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-bottom: 5px;
+  }
+  .lib-input {
+    width: 100%;
+    border: 1.5px solid var(--line);
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 10px 11px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14.5px;
+    color: var(--ink);
+  }
+  .lib-input:focus { outline: none; border-color: var(--brick); }
+
+  .lib-tagpicker { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
+  .lib-tagopt {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px;
+    padding: 6px 12px;
+    border: 1.3px solid var(--line);
+    border-radius: 20px;
+    background: transparent;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .lib-tagopt.selected { background: var(--sage); border-color: var(--sage); color: #fff; }
+  .lib-addtag-row { display: flex; gap: 7px; margin-top: 4px; }
+  .lib-addtag-row .lib-input { padding: 7px 10px; font-size: 13px; }
+  .lib-addtag-row .lib-btn { padding: 7px 12px; font-size: 13px; }
+
+  .lib-lookup-status {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 4px 0 10px;
+    min-height: 18px;
+  }
+  .lib-lookup-status.err { color: var(--brick-deep); }
+  .lib-lookup-status.ok { color: var(--sage); }
+
+  .lib-preview {
+    display: flex; gap: 12px; align-items: center;
+    background: var(--paper); border: 1px solid var(--line-soft);
+    border-radius: 6px; padding: 10px; margin-bottom: 14px;
+  }
+  .lib-preview img { width: 44px; height: 62px; object-fit: cover; border-radius: 2px; border: 1px solid var(--line); }
+  .lib-preview .t { font-family: 'Source Serif 4', serif; font-weight: 600; font-size: 15px; }
+  .lib-preview .a { font-size: 12.5px; color: var(--ink-soft); }
+
+  .lib-modal-footer { display: flex; gap: 10px; margin-top: 18px; }
+  .lib-modal-footer .lib-btn { flex: 1; text-align: center; }
+
+  /* ---------- Scanner ---------- */
+  .lib-scan-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 3/4;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .lib-scan-wrap video { width: 100%; height: 100%; object-fit: cover; }
+  .lib-scan-wrap #sm-reader { width: 100%; height: 100%; }
+  .lib-scan-wrap #sm-reader video { width: 100% !important; height: 100% !important; object-fit: cover; }
+  .lib-scan-wrap #sm-reader__scan_region { border: none !important; }
+  .lib-scan-wrap #sm-reader__dashboard { display: none !important; }
+  .lib-scan-frame {
+    position: absolute; inset: 18% 10%;
+    border: 2px solid var(--brick);
+    border-radius: 6px;
+    box-shadow: 0 0 0 999px rgba(0,0,0,0.35);
+  }
+  .lib-scan-hint {
+    position: absolute; bottom: 10px; left: 0; right: 0;
+    text-align: center; color: #fff; font-size: 12.5px;
+    font-family: 'IBM Plex Mono', monospace;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  }
+  .lib-manual-isbn { display: flex; gap: 8px; margin-bottom: 4px; }
+
+  .lib-category-text {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 8px 0 4px;
+  }
+
+  @media (max-width: 420px) {
+    .lib-title { font-size: 22px; }
+    .lib-fab { padding: 15px 12px; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="lib-root">
+  <div class="lib-header">
+    <div class="lib-header-row">
+      <h1 class="lib-title lib-serif">Home Library</h1>
+      <div class="lib-count" id="lib-count">— books</div>
+    </div>
+    <div class="lib-toolbar">
+      <input class="lib-search" id="lib-search" type="text" placeholder="Search title or author…" />
+    </div>
+    <div class="lib-chiprow" id="lib-filterchips"></div>
+  </div>
+
+  <div class="lib-body" id="lib-body">
+    <div class="lib-empty" id="lib-loading">
+      <span class="lib-serif">Opening the catalog…</span>
+    </div>
+  </div>
+
+  <div class="lib-fab-row">
+    <button class="lib-fab scan" id="lib-open-scan">⌗ Scan barcode</button>
+    <button class="lib-fab manual" id="lib-open-manual">+ Add book</button>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function(){
+  const DEFAULT_TAGS = ["Kids","Young Adult","Adults","All Ages","Fiction","Non-Fiction","Fantasy","Sci-Fi","Mystery","Thriller","Romance","Horror","Adventure","Picture Book","Comics","Biography","History","Self-Help","Cooking","Business","Travel","Humor","Classics","Religion","Health","Reference","Poetry"];
+  const STORAGE_KEY = "library-data";
+
+  let state = { books: [], customTags: [] };
+  let activeFilters = new Set();
+  let searchTerm = "";
+  let editingId = null;
+  let html5Qr = null;
+
+  const $ = (sel, root) => (root||document).querySelector(sel);
+  const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+  function allTags(){
+    const set = new Set(DEFAULT_TAGS);
+    state.customTags.forEach(t => set.add(t));
+    return Array.from(set);
+  }
+
+  async function loadData(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        state.books = parsed.books || [];
+        state.customTags = parsed.customTags || [];
+      }
+    } catch(e) {
+      console.error("Error loading data:", e);
+    }
+    render();
+  }
+
+  async function saveData(){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e) {
+      console.error("Could not save library:", e);
+    }
+  }
+
+  function sortedBooks(){
+    return [...state.books].sort((a,b) => a.title.localeCompare(b.title, undefined, {sensitivity:'base'}));
+  }
+
+  function filteredBooks(){
+    let list = sortedBooks();
+    if (activeFilters.size > 0) {
+      list = list.filter(b => b.tags.some(t => activeFilters.has(t)));
+    }
+    if (searchTerm.trim()) {
+      const q = searchTerm.trim().toLowerCase();
+      list = list.filter(b => b.title.toLowerCase().includes(q) || (b.author||'').toLowerCase().includes(q));
+    }
+    return list;
+  }
+
+  function cardCategoryClass(tags){
+    const hasKids = tags.includes("Kids");
+    const hasAdults = tags.includes("Adults");
+    if (hasKids && hasAdults) return "cat-mixed";
+    if (hasAdults) return "cat-adults";
+    return "";
+  }
+
+  function renderChips(){
+    const wrap = $('#lib-filterchips');
+    const tags = allTags();
+    wrap.innerHTML = tags.map(t =>
+      `<button class="lib-chip ${activeFilters.has(t) ? 'active' : ''}" data-tag="${escapeAttr(t)}">${escapeHtml(t)}</button>`
+    ).join('');
+    wrap.querySelectorAll('.lib-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const t = btn.dataset.tag;
+        if (activeFilters.has(t)) activeFilters.delete(t); else activeFilters.add(t);
+        render();
+      });
+    });
+  }
+
+  function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+  function escapeAttr(s){ return escapeHtml(s); }
+
+  function render(){
+    $('#lib-count').innerHTML = `<b>${state.books.length}</b> book${state.books.length===1?'':'s'}`;
+    renderChips();
+
+    const list = filteredBooks();
+    const body = $('#lib-body');
+
+    if (state.books.length === 0) {
+      body.innerHTML = `<div class="lib-empty"><span class="lib-serif">The shelves are empty</span>Scan a barcode or add a book to start your catalog.</div>`;
+      return;
+    }
+    if (list.length === 0) {
+      body.innerHTML = `<div class="lib-empty"><span class="lib-serif">No matches</span>Try a different search or filter.</div>`;
+      return;
+    }
+
+    let html = '';
+    let lastLetter = null;
+    list.forEach(book => {
+      const letter = (book.title[0] || '#').toUpperCase();
+      if (letter !== lastLetter) {
+        html += `<div class="lib-letter">${escapeHtml(letter)}</div>`;
+        lastLetter = letter;
+      }
+      const cover = book.cover
+        ? `<img class="lib-card-cover" src="${escapeAttr(book.cover)}" alt="">`
+        : `<div class="lib-card-cover"></div>`;
+      html += `
+        <div class="lib-card ${cardCategoryClass(book.tags)}" data-id="${book.id}">
+          ${cover}
+          <div class="lib-card-main">
+            <p class="lib-card-title">${escapeHtml(book.title)}</p>
+            <p class="lib-card-author">${escapeHtml(book.author || 'Unknown author')}</p>
+            <div class="lib-card-tags">${book.tags.map(t => `<span class="lib-tag">${escapeHtml(t)}</span>`).join('')}</div>
+          </div>
+          <div class="lib-card-actions">
+            <button class="lib-icon-btn edit-btn" title="Edit" data-id="${book.id}">✎</button>
+            <button class="lib-icon-btn del-btn" title="Remove" data-id="${book.id}">✕</button>
+          </div>
+        </div>`;
+    });
+    body.innerHTML = html;
+
+    $$('.edit-btn', body).forEach(b => b.addEventListener('click', () => openManualModal(b.dataset.id)));
+    $$('.del-btn', body).forEach(b => b.addEventListener('click', () => removeBook(b.dataset.id)));
+  }
+
+  function removeBook(id){
+    state.books = state.books.filter(b => b.id !== id);
+    saveData();
+    render();
+  }
+
+  $('#lib-search').addEventListener('input', (e) => {
+    searchTerm = e.target.value;
+    render();
+  });
+
+  function openManualModal(id, prefill){
+    editingId = id || null;
+    const book = id ? state.books.find(b => b.id === id) : null;
+    const initial = book || prefill || null;
+    const initialTags = book ? book.tags : ((prefill && prefill.tags) || []);
+    const hasAutoTags = initialTags.length > 0;
+    const coverUrl = initial ? (initial.cover || '') : '';
+
+    const titleAuthorFields = `
+      <label class="lib-label">TITLE</label>
+      <input class="lib-input" id="mm-title" type="text" value="${initial ? escapeAttr(initial.title||'') : ''}" placeholder="e.g. The Wind in the Willows">
+      <label class="lib-label" style="margin-top:10px;">AUTHOR</label>
+      <input class="lib-input" id="mm-author" type="text" value="${initial ? escapeAttr(initial.author||'') : ''}" placeholder="e.g. Kenneth Grahame">`;
+
+    const titleAuthorBlock = coverUrl
+      ? `<div class="lib-field" style="display:flex; gap:12px; align-items:flex-start;">
+           <img src="${escapeAttr(coverUrl)}" alt="" style="width:64px;height:90px;object-fit:cover;border-radius:4px;border:1px solid var(--line);flex-shrink:0;">
+           <div style="flex:1; min-width:0;">${titleAuthorFields}</div>
+         </div>`
+      : `<div class="lib-field">${titleAuthorFields}</div>`;
+
+    const overlay = document.createElement('div');
+    overlay.className = 'lib-overlay';
+    overlay.innerHTML = `
+      <div class="lib-modal">
+        <div class="lib-modal-head">
+          <h2 class="lib-modal-title lib-serif">${book ? 'Edit book' : 'Add a book'}</h2>
+          <button class="lib-close" id="mm-close">✕</button>
+        </div>
+        ${titleAuthorBlock}
+        <div class="lib-field" id="mm-cat-field">
+          <label class="lib-label">CATEGORIES (choose any that apply)</label>
+          ${hasAutoTags ? `<p class="lib-category-text">Suggested categories — tap to change:</p>` : ''}
+          <div class="lib-tagpicker" id="mm-tags"></div>
+          <p class="lib-category-text">Add more (comma or space-separated):</p>
+          <div class="lib-addtag-row">
+            <input class="lib-input" id="mm-newtag" type="text" placeholder="e.g. fiction, mystery">
+            <button class="lib-btn secondary" id="mm-addtag">Add</button>
+          </div>
+        </div>
+        <div class="lib-modal-footer">
+          <button class="lib-btn secondary" id="mm-cancel">Cancel</button>
+          <button class="lib-btn brick" id="mm-save">${book ? 'Save changes' : 'Add to library'}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    let selectedTags = new Set(initialTags);
+    function renderTagPicker(){
+      const wrap = $('#mm-tags', overlay);
+      wrap.innerHTML = allTags().map(t =>
+        `<button type="button" class="lib-tagopt ${selectedTags.has(t) ? 'selected' : ''}" data-tag="${escapeAttr(t)}">${escapeHtml(t)}</button>`
+      ).join('');
+      wrap.querySelectorAll('.lib-tagopt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const t = btn.dataset.tag;
+          if (selectedTags.has(t)) selectedTags.delete(t); else selectedTags.add(t);
+          renderTagPicker();
+        });
+      });
+    }
+    renderTagPicker();
+
+    $('#mm-addtag', overlay).addEventListener('click', () => {
+      const input = $('#mm-newtag', overlay);
+      const val = input.value.trim();
+      if (!val) return;
+
+      const tags = val.split(/[,\s]+/).filter(t => t.trim());
+      tags.forEach(tag => {
+        const trimmed = tag.trim();
+        if (trimmed) {
+          if (!allTags().some(t => t.toLowerCase() === trimmed.toLowerCase())) {
+            state.customTags.push(trimmed);
+          }
+          selectedTags.add(trimmed);
+        }
+      });
+
+      input.value = '';
+      renderTagPicker();
+    });
+
+    $('#mm-close', overlay).addEventListener('click', () => overlay.remove());
+    $('#mm-cancel', overlay).addEventListener('click', () => overlay.remove());
+
+    $('#mm-save', overlay).addEventListener('click', () => {
+      const title = $('#mm-title', overlay).value.trim();
+      if (!title) { $('#mm-title', overlay).focus(); return; }
+      const author = $('#mm-author', overlay).value.trim();
+      const tags = Array.from(selectedTags);
+
+      if (editingId) {
+        const b = state.books.find(x => x.id === editingId);
+        b.title = title; b.author = author; b.tags = tags;
+      } else {
+        const isDuplicate = state.books.some(b =>
+          b.title.toLowerCase() === title.toLowerCase() &&
+          b.author.toLowerCase() === author.toLowerCase()
+        );
+        if (isDuplicate) {
+          alert(`"${title}" by ${author} is already in your library!`);
+          return;
+        }
+
+        state.books.push({
+          id: uid(),
+          title, author, tags,
+          isbn: (prefill && prefill.isbn) || '',
+          cover: (prefill && prefill.cover) || '',
+          addedAt: Date.now()
+        });
+      }
+      saveData();
+      render();
+      overlay.remove();
+    });
+  }
+
+  $('#lib-open-manual').addEventListener('click', () => {
+    openManualModal(null);
+  });
+
+  function stopScan(){
+    if (html5Qr) {
+      const q = html5Qr;
+      html5Qr = null;
+      q.stop().then(() => q.clear()).catch(() => {});
+    }
+  }
+
+  /* Shared genre/age keyword matcher — takes an array of raw category/subject
+     strings (which may themselves contain multiple slash-separated segments,
+     e.g. "Juvenile Fiction / Animals / Dogs") and returns matching tags. */
+  function matchTagsFromText(rawStrings){
+    const tags = new Set();
+    const segments = [];
+    (rawStrings || []).forEach(raw => {
+      if (!raw) return;
+      raw.split('/').forEach(part => {
+        const p = part.trim().toLowerCase();
+        if (p) segments.push(p);
+      });
+    });
+
+    segments.forEach(s => {
+      if (s.includes('juvenile') || s.includes('children') || s.includes('kids') || s.includes('picture book') || s.includes('early reader') || s.includes('beginner reader')) tags.add('Kids');
+      if (s.includes('young adult') || s === 'ya' || s.includes('teen')) tags.add('Young Adult');
+      if (s.includes('picture book')) tags.add('Picture Book');
+      if (s.includes('fantasy') || s.includes('magic') || s.includes('dragon') || s.includes('fairy tale')) tags.add('Fantasy');
+      if (s.includes('science fiction') || s.includes('sci-fi') || s.includes('sci fi') || s.includes('dystopia')) tags.add('Sci-Fi');
+      if (s.includes('mystery') || s.includes('detective') || s.includes('crime')) tags.add('Mystery');
+      if (s.includes('thriller') || s.includes('suspense')) tags.add('Thriller');
+      if (s.includes('romance') || s.includes('love stor')) tags.add('Romance');
+      if (s.includes('horror') || s.includes('ghost stor') || s.includes('supernatural')) tags.add('Horror');
+      if (s.includes('adventure')) tags.add('Adventure');
+      if (s.includes('biography') || s.includes('autobiograph') || s.includes('memoir')) tags.add('Biography');
+      if (s.includes('comic') || s.includes('graphic novel') || s.includes('manga')) tags.add('Comics');
+      if (s.includes('poetry') || s.includes('poems')) tags.add('Poetry');
+      if (s.includes('history') || s.includes('historical')) tags.add('History');
+      if (s.includes('self-help') || s.includes('self help') || s.includes('personal growth') || s.includes('motivation')) tags.add('Self-Help');
+      if (s.includes('cook') || s.includes('recipe') || s.includes('food & wine') || s.includes('culinary')) tags.add('Cooking');
+      if (s.includes('business') || s.includes('economics') || s.includes('finance') || s.includes('management')) tags.add('Business');
+      if (s.includes('travel')) tags.add('Travel');
+      if (s.includes('humor') || s.includes('comedy') || s.includes('funny')) tags.add('Humor');
+      if (s.includes('classic')) tags.add('Classics');
+      if (s.includes('religio') || s.includes('spiritual') || s.includes('bible') || s.includes('faith')) tags.add('Religion');
+      if (s.includes('health') || s.includes('fitness') || s.includes('wellness') || s.includes('nutrition')) tags.add('Health');
+      if (s.includes('reference') || s.includes('encyclopedia') || s.includes('dictionary')) tags.add('Reference');
+      if (s.includes('nonfiction') || s.includes('non-fiction')) tags.add('Non-Fiction');
+      else if (s.includes('fiction') || s.includes('novel') || s.includes('literature')) tags.add('Fiction');
+    });
+
+    if (segments.length > 0 && !tags.has('Fiction') && !tags.has('Non-Fiction') &&
+        (tags.has('Biography') || tags.has('History') || tags.has('Self-Help') || tags.has('Cooking') || tags.has('Business') || tags.has('Travel') || tags.has('Health') || tags.has('Religion') || tags.has('Reference'))) {
+      tags.add('Non-Fiction');
+    }
+    return tags;
+  }
+
+  function deriveTagsFromGoogleBooks(info){
+    const raw = info.categories || [];
+    const tags = matchTagsFromText(raw);
+    if (info.maturityRating === 'MATURE') tags.add('Adults');
+    return Array.from(tags);
+  }
+
+  function deriveTagsFromOpenLibrary(doc){
+    const subjects = (doc.subjects || []).map(s => typeof s === 'string' ? s : (s && s.name) || '');
+    const tags = matchTagsFromText(subjects);
+    return Array.from(tags);
+  }
+
+  async function lookupIsbnGoogle(isbn){
+    try {
+      const resp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`);
+      const data = await resp.json();
+      if (data.items && data.items.length > 0) {
+        const info = data.items[0].volumeInfo;
+        const title = info.title || '';
+        const author = (info.authors || []).join(', ');
+        const cover = info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail || '') : '';
+        const tags = deriveTagsFromGoogleBooks(info);
+        return { title, author, cover, isbn, tags, source: 'Google Books' };
+      }
+    } catch(e) {
+      console.error("Google Books lookup failed:", e);
+    }
+    return null;
+  }
+
+  async function lookupIsbnOpenLibrary(isbn){
+    try {
+      const resp = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&jscmd=data&format=json`);
+      const data = await resp.json();
+      const key = `ISBN:${isbn}`;
+      if (data[key]) {
+        const doc = data[key];
+        const title = doc.title || '';
+        const author = (doc.authors || []).map(a => a.name).join(', ');
+        const cover = doc.cover ? doc.cover.medium : '';
+        const tags = deriveTagsFromOpenLibrary(doc);
+        return { title, author, cover, isbn, tags, source: 'Open Library' };
+      }
+    } catch(e) {
+      console.error("Open Library lookup failed:", e);
+    }
+    return null;
+  }
+
+  async function lookupIsbn(isbn, statusEl){
+    statusEl.textContent = 'Looking up book…';
+    statusEl.className = 'lib-lookup-status';
+
+    let result = await lookupIsbnGoogle(isbn);
+
+    if (!result) {
+      result = await lookupIsbnOpenLibrary(isbn);
+    }
+
+    if (result && result.title) {
+      statusEl.textContent = result.tags.length
+        ? `Found on ${result.source} — categories auto-populated.`
+        : `Found on ${result.source}.`;
+      statusEl.className = 'lib-lookup-status ok';
+      return result;
+    } else {
+      statusEl.textContent = "Couldn't find that ISBN — enter details manually.";
+      statusEl.className = 'lib-lookup-status err';
+      return { title: '', author: '', cover: '', isbn, tags: [], source: 'Manual' };
+    }
+  }
+
+  function openScanModal(){
+    const overlay = document.createElement('div');
+    overlay.className = 'lib-overlay';
+    const supportsCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && (typeof Html5Qrcode !== 'undefined');
+    overlay.innerHTML = `
+      <div class="lib-modal">
+        <div class="lib-modal-head">
+          <h2 class="lib-modal-title lib-serif">Scan a barcode</h2>
+          <button class="lib-close" id="sm-close">✕</button>
+        </div>
+        ${supportsCamera ? `
+          <div class="lib-scan-wrap" id="sm-camwrap">
+            <div id="sm-reader"></div>
+            <div class="lib-scan-frame"></div>
+            <div class="lib-scan-hint">Line up the barcode inside the frame</div>
+          </div>
+        ` : ''}
+        <div class="lib-field">
+          <label class="lib-label">${supportsCamera ? 'OR ENTER ISBN MANUALLY' : 'ENTER ISBN'}</label>
+          <div class="lib-manual-isbn">
+            <input class="lib-input" id="sm-isbn" type="text" inputmode="numeric" placeholder="e.g. 9780141354828">
+            <button class="lib-btn secondary" id="sm-lookup">Look up</button>
+          </div>
+        </div>
+        <div class="lib-lookup-status" id="sm-status"></div>
+        <div id="sm-preview"></div>
+        <div class="lib-modal-footer" id="sm-footer" style="display:none;">
+          <button class="lib-btn secondary" id="sm-cancel2">Cancel</button>
+          <button class="lib-btn brick" id="sm-continue">Continue</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    let foundBook = null;
+    let detectHandled = false;
+
+    function showPreview(book){
+      foundBook = book;
+      const p = $('#sm-preview', overlay);
+      if (book.title) {
+        const tagHtml = (book.tags && book.tags.length)
+          ? `<div class="lib-card-tags" style="margin-top:6px;">${book.tags.map(t => `<span class="lib-tag">${escapeHtml(t)}</span>`).join('')}</div>`
+          : '';
+        p.innerHTML = `<div class="lib-preview">
+          ${book.cover ? `<img src="${escapeAttr(book.cover)}">` : ''}
+          <div><div class="t">${escapeHtml(book.title)}</div><div class="a">${escapeHtml(book.author||'Unknown author')}</div>${tagHtml}</div>
+        </div>`;
+      } else {
+        p.innerHTML = '';
+      }
+      $('#sm-footer', overlay).style.display = 'flex';
+    }
+
+    async function handleDetected(isbn){
+      if (detectHandled) return;
+      detectHandled = true;
+      stopScan();
+      $('#sm-isbn', overlay).value = isbn;
+      const status = $('#sm-status', overlay);
+      const book = await lookupIsbn(isbn, status);
+      showPreview(book);
+    }
+
+    if (supportsCamera) {
+      html5Qr = new Html5Qrcode("sm-reader", {
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.EAN_8,
+          Html5QrcodeSupportedFormats.UPC_A,
+          Html5QrcodeSupportedFormats.UPC_E,
+          Html5QrcodeSupportedFormats.CODE_128
+        ],
+        verbose: false
+      });
+      html5Qr.start(
+        { facingMode: "environment" },
+        { fps: 12, disableFlip: false },
+        (decodedText) => handleDetected(decodedText),
+        () => {}
+      ).catch(() => {
+        const wrap = $('#sm-camwrap', overlay);
+        if (wrap) wrap.innerHTML = '<div class="lib-scan-hint" style="position:static;color:var(--ink-soft);padding:20px;text-align:center;">Camera unavailable — enter the ISBN manually below.</div>';
+      });
+    }
+
+    $('#sm-lookup', overlay).addEventListener('click', async () => {
+      const isbn = $('#sm-isbn', overlay).value.trim();
+      if (!isbn) return;
+      const status = $('#sm-status', overlay);
+      const book = await lookupIsbn(isbn, status);
+      showPreview(book);
+    });
+
+    function closeScan(){ detectHandled = true; stopScan(); overlay.remove(); }
+    $('#sm-close', overlay).addEventListener('click', closeScan);
+    $('#sm-cancel2', overlay).addEventListener('click', closeScan);
+
+    $('#sm-continue', overlay).addEventListener('click', () => {
+      const isbnEntered = $('#sm-isbn', overlay).value.trim();
+      const prefill = {
+        title: foundBook ? foundBook.title : '',
+        author: foundBook ? foundBook.author : '',
+        cover: foundBook ? foundBook.cover : '',
+        isbn: foundBook ? foundBook.isbn : isbnEntered,
+        tags: foundBook ? foundBook.tags : []
+      };
+      closeScan();
+      openManualModal(null, prefill);
+    });
+  }
+
+  $('#lib-open-scan').addEventListener('click', openScanModal);
+
+  loadData();
+})();
+</script>
+</body>
+</html>
