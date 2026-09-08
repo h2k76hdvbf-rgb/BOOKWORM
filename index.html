@@ -396,7 +396,6 @@
   let activeFilters = new Set();
   let searchTerm = "";
   let editingId = null;
-  let pendingLookupCover = null;
   let html5Qr = null;
 
   const $ = (sel, root) => (root||document).querySelector(sel);
@@ -534,10 +533,10 @@
   });
 
   /* ---------------- Manual / Edit modal ---------------- */
-  function openManualModal(id){
+  function openManualModal(id, prefill){
     editingId = id || null;
     const book = id ? state.books.find(b => b.id === id) : null;
-    pendingLookupCover = book ? (book.cover || null) : null;
+    const initial = book || prefill || null;
 
     const overlay = document.createElement('div');
     overlay.className = 'lib-overlay';
@@ -549,11 +548,11 @@
         </div>
         <div class="lib-field">
           <label class="lib-label">TITLE</label>
-          <input class="lib-input" id="mm-title" type="text" value="${book ? escapeAttr(book.title) : ''}" placeholder="e.g. The Wind in the Willows">
+          <input class="lib-input" id="mm-title" type="text" value="${initial ? escapeAttr(initial.title||'') : ''}" placeholder="e.g. The Wind in the Willows">
         </div>
         <div class="lib-field">
           <label class="lib-label">AUTHOR</label>
-          <input class="lib-input" id="mm-author" type="text" value="${book ? escapeAttr(book.author||'') : ''}" placeholder="e.g. Kenneth Grahame">
+          <input class="lib-input" id="mm-author" type="text" value="${initial ? escapeAttr(initial.author||'') : ''}" placeholder="e.g. Kenneth Grahame">
         </div>
         <div class="lib-field">
           <label class="lib-label">CATEGORIES (choose any that apply)</label>
@@ -570,7 +569,7 @@
       </div>`;
     document.body.appendChild(overlay);
 
-    let selectedTags = new Set(book ? book.tags : []);
+    let selectedTags = new Set(book ? book.tags : ((prefill && prefill.tags) || []));
     function renderTagPicker(){
       const wrap = $('#mm-tags', overlay);
       wrap.innerHTML = allTags().map(t =>
@@ -614,8 +613,8 @@
         state.books.push({
           id: uid(),
           title, author, tags,
-          isbn: pendingLookupIsbn || '',
-          cover: pendingLookupCover || '',
+          isbn: (prefill && prefill.isbn) || '',
+          cover: (prefill && prefill.cover) || '',
           addedAt: Date.now()
         });
       }
@@ -626,19 +625,37 @@
   }
 
   $('#lib-open-manual').addEventListener('click', () => {
-    pendingLookupIsbn = '';
     openManualModal(null);
   });
 
   /* ---------------- Barcode scan modal ---------------- */
-  let pendingLookupIsbn = '';
-
   function stopScan(){
     if (html5Qr) {
       const q = html5Qr;
       html5Qr = null;
       q.stop().then(() => q.clear()).catch(() => {});
     }
+  }
+
+  function deriveTagsFromGoogleBooks(info){
+    const tags = new Set();
+    (info.categories || []).forEach(raw => {
+      const c = raw.toLowerCase();
+      if (c.includes('juvenile') || c.includes('young adult') || c.includes('children')) tags.add('Kids');
+      if (c.includes('picture book')) tags.add('Picture Book');
+      if (c.includes('fantasy')) tags.add('Fantasy');
+      if (c.includes('science fiction') || c.includes('sci-fi')) tags.add('Sci-Fi');
+      if (c.includes('mystery') || c.includes('detective') || c.includes('thriller')) tags.add('Mystery');
+      if (c.includes('biography') || c.includes('autobiography')) tags.add('Biography');
+      if (c.includes('comic') || c.includes('graphic novel')) tags.add('Comics');
+      if (c.includes('poetry')) tags.add('Poetry');
+      if (c.includes('reference')) tags.add('Reference');
+      if (c.includes('adventure')) tags.add('Adventure');
+      if (c.includes('nonfiction') || c.includes('non-fiction')) tags.add('Non-Fiction');
+      else if (c.includes('fiction')) tags.add('Fiction');
+    });
+    if (info.maturityRating === 'MATURE') tags.add('Adults');
+    return Array.from(tags);
   }
 
   async function lookupIsbn(isbn, statusEl){
@@ -652,18 +669,21 @@
         const title = info.title || '';
         const author = (info.authors || []).join(', ');
         const cover = info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail || '') : '';
-        statusEl.textContent = 'Found it — check the details below.';
+        const tags = deriveTagsFromGoogleBooks(info);
+        statusEl.textContent = tags.length
+          ? 'Found it — categories suggested below, adjust as needed.'
+          : 'Found it — check the details below.';
         statusEl.className = 'lib-lookup-status ok';
-        return { title, author, cover, isbn };
+        return { title, author, cover, isbn, tags };
       } else {
         statusEl.textContent = "Couldn't find that ISBN — enter the details manually below.";
         statusEl.className = 'lib-lookup-status err';
-        return { title: '', author: '', cover: '', isbn };
+        return { title: '', author: '', cover: '', isbn, tags: [] };
       }
     } catch(e) {
       statusEl.textContent = "Lookup failed — enter the details manually below.";
       statusEl.className = 'lib-lookup-status err';
-      return { title: '', author: '', cover: '', isbn };
+      return { title: '', author: '', cover: '', isbn, tags: [] };
     }
   }
 
@@ -707,9 +727,12 @@
       foundBook = book;
       const p = $('#sm-preview', overlay);
       if (book.title) {
+        const tagHtml = (book.tags && book.tags.length)
+          ? `<div class="lib-card-tags" style="margin-top:6px;">${book.tags.map(t => `<span class="lib-tag">${escapeHtml(t)}</span>`).join('')}</div>`
+          : '';
         p.innerHTML = `<div class="lib-preview">
           ${book.cover ? `<img src="${escapeAttr(book.cover)}">` : ''}
-          <div><div class="t">${escapeHtml(book.title)}</div><div class="a">${escapeHtml(book.author||'Unknown author')}</div></div>
+          <div><div class="t">${escapeHtml(book.title)}</div><div class="a">${escapeHtml(book.author||'Unknown author')}</div>${tagHtml}</div>
         </div>`;
       } else {
         p.innerHTML = '';
@@ -739,8 +762,16 @@
         verbose: false
       });
       html5Qr.start(
-        { facingMode: "environment" },
-        { fps: 12, disableFlip: false },
+        { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 } },
+        {
+          fps: 15,
+          disableFlip: false,
+          qrbox: (viewfinderWidth, viewfinderHeight) => {
+            const w = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.9);
+            return { width: w, height: Math.floor(w * 0.45) };
+          },
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+        },
         (decodedText) => handleDetected(decodedText),
         () => {} /* ignore per-frame miss */
       ).catch(() => {
@@ -762,19 +793,15 @@
     $('#sm-cancel2', overlay).addEventListener('click', closeScan);
 
     $('#sm-continue', overlay).addEventListener('click', () => {
+      const isbnEntered = $('#sm-isbn', overlay).value.trim();
+      const prefill = {
+        title: foundBook ? foundBook.title : '',
+        author: foundBook ? foundBook.author : '',
+        cover: foundBook ? foundBook.cover : '',
+        isbn: foundBook ? foundBook.isbn : isbnEntered
+      };
       closeScan();
-      pendingLookupIsbn = foundBook ? foundBook.isbn : $('#sm-isbn', overlay).value.trim();
-      pendingLookupCover = foundBook ? foundBook.cover : '';
-      editingId = null;
-      openManualModal(null);
-      if (foundBook && foundBook.title) {
-        setTimeout(() => {
-          const t = document.querySelector('.lib-modal #mm-title');
-          const a = document.querySelector('.lib-modal #mm-author');
-          if (t) t.value = foundBook.title;
-          if (a) a.value = foundBook.author;
-        }, 0);
-      }
+      openManualModal(null, prefill);
     });
   }
 
