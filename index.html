@@ -260,21 +260,6 @@
     border-top: 3px solid var(--ink);
     padding: 20px 20px 28px;
   }
-  .lib-scan-modal {
-    display: flex;
-    flex-direction: column;
-    max-height: 92vh;
-  }
-  .lib-scan-modal .lib-modal {
-    display: flex;
-    flex-direction: column;
-  }
-  .lib-scan-modal .lib-scan-wrap {
-    order: -1;
-    flex: 1;
-    margin-top: 0;
-    margin-bottom: 14px;
-  }
   .lib-modal-head {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 16px;
@@ -410,7 +395,6 @@
 <script>
 (function(){
   const DEFAULT_TAGS = ["Kids","Adults","All Ages","Fiction","Non-Fiction","Fantasy","Sci-Fi","Mystery","Adventure","Picture Book","Comics","Biography","Reference","Poetry"];
-  const AGE_TAGS = new Set(["Kids","Adults","All Ages"]);
   const STORAGE_KEY = "library-data";
 
   let state = { books: [], customTags: [] };
@@ -421,7 +405,6 @@
 
   const $ = (sel, root) => (root||document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
-  const root = $('#lib-root');
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 
   function allTags(){
@@ -439,7 +422,7 @@
         state.customTags = parsed.customTags || [];
       }
     } catch(e) {
-      // no data yet
+      console.error("Error loading data:", e);
     }
     render();
   }
@@ -547,13 +530,11 @@
     render();
   }
 
-  /* ---------------- Search ---------------- */
   $('#lib-search').addEventListener('input', (e) => {
     searchTerm = e.target.value;
     render();
   });
 
-  /* ---------------- Manual / Edit modal ---------------- */
   function openManualModal(id, prefill){
     editingId = id || null;
     const book = id ? state.books.find(b => b.id === id) : null;
@@ -577,13 +558,13 @@
           <label class="lib-label">AUTHOR</label>
           <input class="lib-input" id="mm-author" type="text" value="${initial ? escapeAttr(initial.author||'') : ''}" placeholder="e.g. Kenneth Grahame">
         </div>
-        <div class="lib-field" id="mm-cat-field">
+        <div class="lib-field" id="mm-cat-field" ${hasAutoTags ? '' : 'style="display:none;"'}>
           <label class="lib-label">CATEGORIES</label>
-          ${hasAutoTags ? `<p class="lib-category-text">Suggested categories:</p>` : ''}
+          ${hasAutoTags ? `<p class="lib-category-text">Suggested categories (click to change):</p>` : ''}
           <div class="lib-tagpicker" id="mm-tags"></div>
           <p class="lib-category-text">Add more (comma or space-separated):</p>
           <div class="lib-addtag-row">
-            <input class="lib-input" id="mm-newtag" type="text" placeholder="e.g. fiction, mystery or fiction mystery">
+            <input class="lib-input" id="mm-newtag" type="text" placeholder="e.g. fiction, mystery">
             <button class="lib-btn secondary" id="mm-addtag">Add</button>
           </div>
         </div>
@@ -615,7 +596,6 @@
       const val = input.value.trim();
       if (!val) return;
       
-      // Split by comma or space
       const tags = val.split(/[,\s]+/).filter(t => t.trim());
       tags.forEach(tag => {
         const trimmed = tag.trim();
@@ -644,6 +624,16 @@
         const b = state.books.find(x => x.id === editingId);
         b.title = title; b.author = author; b.tags = tags;
       } else {
+        // CHECK FOR DUPLICATES
+        const isDuplicate = state.books.some(b => 
+          b.title.toLowerCase() === title.toLowerCase() && 
+          b.author.toLowerCase() === author.toLowerCase()
+        );
+        if (isDuplicate) {
+          alert(`"${title}" by ${author} is already in your library!`);
+          return;
+        }
+
         state.books.push({
           id: uid(),
           title, author, tags,
@@ -662,7 +652,6 @@
     openManualModal(null);
   });
 
-  /* ---------------- Barcode scan modal ---------------- */
   function stopScan(){
     if (html5Qr) {
       const q = html5Qr;
@@ -758,22 +747,20 @@
     statusEl.textContent = 'Looking up book…';
     statusEl.className = 'lib-lookup-status';
     
-    // Try Google Books first
     let result = await lookupIsbnGoogle(isbn);
     
-    // If Google Books fails, try Open Library
     if (!result) {
       result = await lookupIsbnOpenLibrary(isbn);
     }
     
     if (result && result.title) {
       statusEl.textContent = result.tags.length
-        ? `Found on ${result.source} — categories auto-populated below.`
-        : `Found on ${result.source} — check the details below.`;
+        ? `Found on ${result.source} — categories auto-populated.`
+        : `Found on ${result.source}.`;
       statusEl.className = 'lib-lookup-status ok';
       return result;
     } else {
-      statusEl.textContent = "Couldn't find that ISBN — enter the details manually below.";
+      statusEl.textContent = "Couldn't find that ISBN — enter details manually.";
       statusEl.className = 'lib-lookup-status err';
       return { title: '', author: '', cover: '', isbn, tags: [], source: 'Manual' };
     }
@@ -781,7 +768,7 @@
 
   function openScanModal(){
     const overlay = document.createElement('div');
-    overlay.className = 'lib-overlay lib-scan-modal';
+    overlay.className = 'lib-overlay';
     const supportsCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && (typeof Html5Qrcode !== 'undefined');
     overlay.innerHTML = `
       <div class="lib-modal">
@@ -857,7 +844,7 @@
         { facingMode: "environment" },
         { fps: 12, disableFlip: false },
         (decodedText) => handleDetected(decodedText),
-        () => {} /* ignore per-frame miss */
+        () => {}
       ).catch(() => {
         const wrap = $('#sm-camwrap', overlay);
         if (wrap) wrap.innerHTML = '<div class="lib-scan-hint" style="position:static;color:var(--ink-soft);padding:20px;text-align:center;">Camera unavailable — enter the ISBN manually below.</div>';
