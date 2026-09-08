@@ -260,6 +260,21 @@
     border-top: 3px solid var(--ink);
     padding: 20px 20px 28px;
   }
+  .lib-scan-modal {
+    display: flex;
+    flex-direction: column;
+    max-height: 92vh;
+  }
+  .lib-scan-modal .lib-modal {
+    display: flex;
+    flex-direction: column;
+  }
+  .lib-scan-modal .lib-scan-wrap {
+    order: -1;
+    flex: 1;
+    margin-top: 0;
+    margin-bottom: 14px;
+  }
   .lib-modal-head {
     display: flex; justify-content: space-between; align-items: center;
     margin-bottom: 16px;
@@ -352,6 +367,12 @@
     text-shadow: 0 1px 3px rgba(0,0,0,0.6);
   }
   .lib-manual-isbn { display: flex; gap: 8px; margin-bottom: 4px; }
+
+  .lib-category-text {
+    font-size: 13px;
+    color: var(--ink-soft);
+    margin: 8px 0 4px;
+  }
 
   @media (max-width: 420px) {
     .lib-title { font-size: 22px; }
@@ -537,6 +558,8 @@
     editingId = id || null;
     const book = id ? state.books.find(b => b.id === id) : null;
     const initial = book || prefill || null;
+    const initialTags = book ? book.tags : ((prefill && prefill.tags) || []);
+    const hasAutoTags = initialTags.length > 0;
 
     const overlay = document.createElement('div');
     overlay.className = 'lib-overlay';
@@ -554,11 +577,13 @@
           <label class="lib-label">AUTHOR</label>
           <input class="lib-input" id="mm-author" type="text" value="${initial ? escapeAttr(initial.author||'') : ''}" placeholder="e.g. Kenneth Grahame">
         </div>
-        <div class="lib-field">
-          <label class="lib-label">CATEGORIES (choose any that apply)</label>
+        <div class="lib-field" id="mm-cat-field">
+          <label class="lib-label">CATEGORIES</label>
+          ${hasAutoTags ? `<p class="lib-category-text">Suggested categories:</p>` : ''}
           <div class="lib-tagpicker" id="mm-tags"></div>
+          <p class="lib-category-text">Add more (comma or space-separated):</p>
           <div class="lib-addtag-row">
-            <input class="lib-input" id="mm-newtag" type="text" placeholder="Add a new category…">
+            <input class="lib-input" id="mm-newtag" type="text" placeholder="e.g. fiction, mystery or fiction mystery">
             <button class="lib-btn secondary" id="mm-addtag">Add</button>
           </div>
         </div>
@@ -569,7 +594,7 @@
       </div>`;
     document.body.appendChild(overlay);
 
-    let selectedTags = new Set(book ? book.tags : ((prefill && prefill.tags) || []));
+    let selectedTags = new Set(initialTags);
     function renderTagPicker(){
       const wrap = $('#mm-tags', overlay);
       wrap.innerHTML = allTags().map(t =>
@@ -589,10 +614,19 @@
       const input = $('#mm-newtag', overlay);
       const val = input.value.trim();
       if (!val) return;
-      if (!allTags().some(t => t.toLowerCase() === val.toLowerCase())) {
-        state.customTags.push(val);
-      }
-      selectedTags.add(val);
+      
+      // Split by comma or space
+      const tags = val.split(/[,\s]+/).filter(t => t.trim());
+      tags.forEach(tag => {
+        const trimmed = tag.trim();
+        if (trimmed) {
+          if (!allTags().some(t => t.toLowerCase() === trimmed.toLowerCase())) {
+            state.customTags.push(trimmed);
+          }
+          selectedTags.add(trimmed);
+        }
+      });
+      
       input.value = '';
       renderTagPicker();
     });
@@ -734,12 +768,12 @@
     
     if (result && result.title) {
       statusEl.textContent = result.tags.length
-        ? `Found on ${result.source} — categories suggested below, adjust as needed.`
+        ? `Found on ${result.source} — categories auto-populated below.`
         : `Found on ${result.source} — check the details below.`;
       statusEl.className = 'lib-lookup-status ok';
       return result;
     } else {
-      statusEl.textContent = "Couldn't find that ISBN in Google Books or Open Library — enter the details manually below.";
+      statusEl.textContent = "Couldn't find that ISBN — enter the details manually below.";
       statusEl.className = 'lib-lookup-status err';
       return { title: '', author: '', cover: '', isbn, tags: [], source: 'Manual' };
     }
@@ -747,7 +781,7 @@
 
   function openScanModal(){
     const overlay = document.createElement('div');
-    overlay.className = 'lib-overlay';
+    overlay.className = 'lib-overlay lib-scan-modal';
     const supportsCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && (typeof Html5Qrcode !== 'undefined');
     overlay.innerHTML = `
       <div class="lib-modal">
@@ -773,7 +807,7 @@
         <div id="sm-preview"></div>
         <div class="lib-modal-footer" id="sm-footer" style="display:none;">
           <button class="lib-btn secondary" id="sm-cancel2">Cancel</button>
-          <button class="lib-btn brick" id="sm-continue">Continue &amp; categorize</button>
+          <button class="lib-btn brick" id="sm-continue">Continue</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -848,7 +882,8 @@
         title: foundBook ? foundBook.title : '',
         author: foundBook ? foundBook.author : '',
         cover: foundBook ? foundBook.cover : '',
-        isbn: foundBook ? foundBook.isbn : isbnEntered
+        isbn: foundBook ? foundBook.isbn : isbnEntered,
+        tags: foundBook ? foundBook.tags : []
       };
       closeScan();
       openManualModal(null, prefill);
