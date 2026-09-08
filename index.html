@@ -260,10 +260,13 @@
   /* ---------- Modal ---------- */
   .lib-overlay {
     position: fixed; inset: 0;
-    background: rgba(36,31,23,0.55);
+    background: rgba(20,16,11,0.82);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
     display: flex; align-items: flex-end; justify-content: center;
     z-index: 100;
   }
+  body.lib-modal-open .lib-fab-row { display: none; }
   .lib-modal {
     background: var(--paper-raised);
     width: min(720px, 100%);
@@ -420,6 +423,8 @@
   const $ = (sel, root) => (root||document).querySelector(sel);
   const $$ = (sel, root) => Array.from((root||document).querySelectorAll(sel));
   const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+  const lockBackground = () => document.body.classList.add('lib-modal-open');
+  const unlockBackground = () => document.body.classList.remove('lib-modal-open');
 
   function allTags(){
     const set = new Set(DEFAULT_TAGS);
@@ -595,6 +600,7 @@
         </div>
       </div>`;
     document.body.appendChild(overlay);
+    lockBackground();
 
     let selectedTags = new Set(initialTags);
     function renderTagPicker(){
@@ -632,8 +638,8 @@
       renderTagPicker();
     });
 
-    $('#mm-close', overlay).addEventListener('click', () => overlay.remove());
-    $('#mm-cancel', overlay).addEventListener('click', () => overlay.remove());
+    $('#mm-close', overlay).addEventListener('click', () => { unlockBackground(); overlay.remove(); });
+    $('#mm-cancel', overlay).addEventListener('click', () => { unlockBackground(); overlay.remove(); });
 
     $('#mm-save', overlay).addEventListener('click', () => {
       const title = $('#mm-title', overlay).value.trim();
@@ -664,6 +670,7 @@
       }
       saveData();
       render();
+      unlockBackground();
       overlay.remove();
     });
   }
@@ -687,236 +694,4 @@
     const tags = new Set();
     const segments = [];
     (rawStrings || []).forEach(raw => {
-      if (!raw) return;
-      raw.split('/').forEach(part => {
-        const p = part.trim().toLowerCase();
-        if (p) segments.push(p);
-      });
-    });
-
-    segments.forEach(s => {
-      if (s.includes('juvenile') || s.includes('children') || s.includes('kids') || s.includes('picture book') || s.includes('early reader') || s.includes('beginner reader')) tags.add('Kids');
-      if (s.includes('young adult') || s === 'ya' || s.includes('teen')) tags.add('Young Adult');
-      if (s.includes('picture book')) tags.add('Picture Book');
-      if (s.includes('fantasy') || s.includes('magic') || s.includes('dragon') || s.includes('fairy tale')) tags.add('Fantasy');
-      if (s.includes('science fiction') || s.includes('sci-fi') || s.includes('sci fi') || s.includes('dystopia')) tags.add('Sci-Fi');
-      if (s.includes('mystery') || s.includes('detective') || s.includes('crime')) tags.add('Mystery');
-      if (s.includes('thriller') || s.includes('suspense')) tags.add('Thriller');
-      if (s.includes('romance') || s.includes('love stor')) tags.add('Romance');
-      if (s.includes('horror') || s.includes('ghost stor') || s.includes('supernatural')) tags.add('Horror');
-      if (s.includes('adventure')) tags.add('Adventure');
-      if (s.includes('biography') || s.includes('autobiograph') || s.includes('memoir')) tags.add('Biography');
-      if (s.includes('comic') || s.includes('graphic novel') || s.includes('manga')) tags.add('Comics');
-      if (s.includes('poetry') || s.includes('poems')) tags.add('Poetry');
-      if (s.includes('history') || s.includes('historical')) tags.add('History');
-      if (s.includes('self-help') || s.includes('self help') || s.includes('personal growth') || s.includes('motivation')) tags.add('Self-Help');
-      if (s.includes('cook') || s.includes('recipe') || s.includes('food & wine') || s.includes('culinary')) tags.add('Cooking');
-      if (s.includes('business') || s.includes('economics') || s.includes('finance') || s.includes('management')) tags.add('Business');
-      if (s.includes('travel')) tags.add('Travel');
-      if (s.includes('humor') || s.includes('comedy') || s.includes('funny')) tags.add('Humor');
-      if (s.includes('classic')) tags.add('Classics');
-      if (s.includes('religio') || s.includes('spiritual') || s.includes('bible') || s.includes('faith')) tags.add('Religion');
-      if (s.includes('health') || s.includes('fitness') || s.includes('wellness') || s.includes('nutrition')) tags.add('Health');
-      if (s.includes('reference') || s.includes('encyclopedia') || s.includes('dictionary')) tags.add('Reference');
-      if (s.includes('nonfiction') || s.includes('non-fiction')) tags.add('Non-Fiction');
-      else if (s.includes('fiction') || s.includes('novel') || s.includes('literature')) tags.add('Fiction');
-    });
-
-    if (segments.length > 0 && !tags.has('Fiction') && !tags.has('Non-Fiction') &&
-        (tags.has('Biography') || tags.has('History') || tags.has('Self-Help') || tags.has('Cooking') || tags.has('Business') || tags.has('Travel') || tags.has('Health') || tags.has('Religion') || tags.has('Reference'))) {
-      tags.add('Non-Fiction');
-    }
-    return tags;
-  }
-
-  function deriveTagsFromGoogleBooks(info){
-    const raw = info.categories || [];
-    const tags = matchTagsFromText(raw);
-    if (info.maturityRating === 'MATURE') tags.add('Adults');
-    return Array.from(tags);
-  }
-
-  function deriveTagsFromOpenLibrary(doc){
-    const subjects = (doc.subjects || []).map(s => typeof s === 'string' ? s : (s && s.name) || '');
-    const tags = matchTagsFromText(subjects);
-    return Array.from(tags);
-  }
-
-  async function lookupIsbnGoogle(isbn){
-    try {
-      const resp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`);
-      const data = await resp.json();
-      if (data.items && data.items.length > 0) {
-        const info = data.items[0].volumeInfo;
-        const title = info.title || '';
-        const author = (info.authors || []).join(', ');
-        const cover = info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail || '') : '';
-        const tags = deriveTagsFromGoogleBooks(info);
-        return { title, author, cover, isbn, tags, source: 'Google Books' };
-      }
-    } catch(e) {
-      console.error("Google Books lookup failed:", e);
-    }
-    return null;
-  }
-
-  async function lookupIsbnOpenLibrary(isbn){
-    try {
-      const resp = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&jscmd=data&format=json`);
-      const data = await resp.json();
-      const key = `ISBN:${isbn}`;
-      if (data[key]) {
-        const doc = data[key];
-        const title = doc.title || '';
-        const author = (doc.authors || []).map(a => a.name).join(', ');
-        const cover = doc.cover ? doc.cover.medium : '';
-        const tags = deriveTagsFromOpenLibrary(doc);
-        return { title, author, cover, isbn, tags, source: 'Open Library' };
-      }
-    } catch(e) {
-      console.error("Open Library lookup failed:", e);
-    }
-    return null;
-  }
-
-  async function lookupIsbn(isbn, statusEl){
-    statusEl.textContent = 'Looking up book…';
-    statusEl.className = 'lib-lookup-status';
-
-    let result = await lookupIsbnGoogle(isbn);
-
-    if (!result) {
-      result = await lookupIsbnOpenLibrary(isbn);
-    }
-
-    if (result && result.title) {
-      statusEl.textContent = result.tags.length
-        ? `Found on ${result.source} — categories auto-populated.`
-        : `Found on ${result.source}.`;
-      statusEl.className = 'lib-lookup-status ok';
-      return result;
-    } else {
-      statusEl.textContent = "Couldn't find that ISBN — enter details manually.";
-      statusEl.className = 'lib-lookup-status err';
-      return { title: '', author: '', cover: '', isbn, tags: [], source: 'Manual' };
-    }
-  }
-
-  function openScanModal(){
-    const overlay = document.createElement('div');
-    overlay.className = 'lib-overlay';
-    const supportsCamera = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) && (typeof Html5Qrcode !== 'undefined');
-    overlay.innerHTML = `
-      <div class="lib-modal">
-        <div class="lib-modal-head">
-          <h2 class="lib-modal-title lib-serif">Scan a barcode</h2>
-          <button class="lib-close" id="sm-close">✕</button>
-        </div>
-        ${supportsCamera ? `
-          <div class="lib-scan-wrap" id="sm-camwrap">
-            <div id="sm-reader"></div>
-            <div class="lib-scan-frame"></div>
-            <div class="lib-scan-hint">Line up the barcode inside the frame</div>
-          </div>
-        ` : ''}
-        <div class="lib-field">
-          <label class="lib-label">${supportsCamera ? 'OR ENTER ISBN MANUALLY' : 'ENTER ISBN'}</label>
-          <div class="lib-manual-isbn">
-            <input class="lib-input" id="sm-isbn" type="text" inputmode="numeric" placeholder="e.g. 9780141354828">
-            <button class="lib-btn secondary" id="sm-lookup">Look up</button>
-          </div>
-        </div>
-        <div class="lib-lookup-status" id="sm-status"></div>
-        <div id="sm-preview"></div>
-        <div class="lib-modal-footer" id="sm-footer" style="display:none;">
-          <button class="lib-btn secondary" id="sm-cancel2">Cancel</button>
-          <button class="lib-btn brick" id="sm-continue">Continue</button>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
-
-    let foundBook = null;
-    let detectHandled = false;
-
-    function showPreview(book){
-      foundBook = book;
-      const p = $('#sm-preview', overlay);
-      if (book.title) {
-        const tagHtml = (book.tags && book.tags.length)
-          ? `<div class="lib-card-tags" style="margin-top:6px;">${book.tags.map(t => `<span class="lib-tag">${escapeHtml(t)}</span>`).join('')}</div>`
-          : '';
-        p.innerHTML = `<div class="lib-preview">
-          ${book.cover ? `<img src="${escapeAttr(book.cover)}">` : ''}
-          <div><div class="t">${escapeHtml(book.title)}</div><div class="a">${escapeHtml(book.author||'Unknown author')}</div>${tagHtml}</div>
-        </div>`;
-      } else {
-        p.innerHTML = '';
-      }
-      $('#sm-footer', overlay).style.display = 'flex';
-    }
-
-    async function handleDetected(isbn){
-      if (detectHandled) return;
-      detectHandled = true;
-      stopScan();
-      $('#sm-isbn', overlay).value = isbn;
-      const status = $('#sm-status', overlay);
-      const book = await lookupIsbn(isbn, status);
-      showPreview(book);
-    }
-
-    if (supportsCamera) {
-      html5Qr = new Html5Qrcode("sm-reader", {
-        formatsToSupport: [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.CODE_128
-        ],
-        verbose: false
-      });
-      html5Qr.start(
-        { facingMode: "environment" },
-        { fps: 12, disableFlip: false },
-        (decodedText) => handleDetected(decodedText),
-        () => {}
-      ).catch(() => {
-        const wrap = $('#sm-camwrap', overlay);
-        if (wrap) wrap.innerHTML = '<div class="lib-scan-hint" style="position:static;color:var(--ink-soft);padding:20px;text-align:center;">Camera unavailable — enter the ISBN manually below.</div>';
-      });
-    }
-
-    $('#sm-lookup', overlay).addEventListener('click', async () => {
-      const isbn = $('#sm-isbn', overlay).value.trim();
-      if (!isbn) return;
-      const status = $('#sm-status', overlay);
-      const book = await lookupIsbn(isbn, status);
-      showPreview(book);
-    });
-
-    function closeScan(){ detectHandled = true; stopScan(); overlay.remove(); }
-    $('#sm-close', overlay).addEventListener('click', closeScan);
-    $('#sm-cancel2', overlay).addEventListener('click', closeScan);
-
-    $('#sm-continue', overlay).addEventListener('click', () => {
-      const isbnEntered = $('#sm-isbn', overlay).value.trim();
-      const prefill = {
-        title: foundBook ? foundBook.title : '',
-        author: foundBook ? foundBook.author : '',
-        cover: foundBook ? foundBook.cover : '',
-        isbn: foundBook ? foundBook.isbn : isbnEntered,
-        tags: foundBook ? foundBook.tags : []
-      };
-      closeScan();
-      openManualModal(null, prefill);
-    });
-  }
-
-  $('#lib-open-scan').addEventListener('click', openScanModal);
-
-  loadData();
-})();
-</script>
-</body>
-</html>
+      if (!raw)
