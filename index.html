@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home Library</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600[...]
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
 
   #lib-root {
     --paper: #EFE7D6;
@@ -21,10 +21,15 @@
     --line-soft: #DACFB4;
     font-family: 'Inter', system-ui, sans-serif;
     color: var(--ink);
-    background: var(--paper);
+    background-color: var(--paper);
     background-image:
-      radial-gradient(rgba(36,31,23,0.035) 1px, transparent 1px);
-    background-size: 3px 3px;
+      radial-gradient(38% 32% at 12% 8%, rgba(255,205,120,0.32), transparent 72%),
+      radial-gradient(34% 28% at 88% 14%, rgba(150,210,196,0.30), transparent 72%),
+      radial-gradient(38% 32% at 82% 92%, rgba(255,178,190,0.26), transparent 72%),
+      radial-gradient(34% 28% at 8% 88%, rgba(160,196,224,0.28), transparent 72%),
+      radial-gradient(rgba(36,31,23,0.04) 1px, transparent 1px);
+    background-size: auto, auto, auto, auto, 3px 3px;
+    background-attachment: fixed, fixed, fixed, fixed, auto;
     min-height: 100vh;
     box-sizing: border-box;
     padding: 0;
@@ -39,7 +44,8 @@
   .lib-header {
     padding: 28px 20px 18px;
     border-bottom: 2px solid var(--ink);
-    background: var(--paper-raised);
+    background: linear-gradient(180deg, var(--paper-raised) 0%, #F3ECDC 100%);
+    box-shadow: 0 2px 10px rgba(36,31,23,0.08);
     position: sticky;
     top: 0;
     z-index: 20;
@@ -152,11 +158,14 @@
     background: var(--paper-raised);
     border: 1px solid var(--line-soft);
     border-left: 3px solid var(--sage);
-    border-radius: 2px;
+    border-radius: 3px;
     padding: 12px 14px;
-    margin-bottom: 9px;
+    margin-bottom: 10px;
     align-items: flex-start;
+    box-shadow: 0 1px 3px rgba(36,31,23,0.08), 0 1px 1px rgba(36,31,23,0.04);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
   }
+  .lib-card:active { box-shadow: 0 1px 2px rgba(36,31,23,0.08); transform: translateY(1px); }
   .lib-card.cat-adults { border-left-color: var(--gold); }
   .lib-card.cat-mixed { border-left-color: var(--brick); }
 
@@ -228,21 +237,25 @@
     display: flex;
     gap: 10px;
     z-index: 30;
-    width: min(720px, calc(100% - 40px));
+    width: min(720px, calc(100% - 32px));
     justify-content: center;
   }
   .lib-fab {
-    border: 1.5px solid var(--ink);
-    border-radius: 30px;
-    padding: 13px 22px;
+    flex: 1;
+    border: 2px solid var(--ink);
+    border-radius: 16px;
+    padding: 18px 20px;
     font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 14.5px;
+    font-weight: 700;
+    font-size: 16.5px;
+    letter-spacing: -0.01em;
     cursor: pointer;
-    box-shadow: 0 4px 14px rgba(36,31,23,0.18);
+    box-shadow: 0 6px 18px rgba(36,31,23,0.22);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
   }
-  .lib-fab.scan { background: var(--brick); color: #fff; border-color: var(--brick); }
-  .lib-fab.manual { background: var(--paper-raised); color: var(--ink); }
+  .lib-fab:active { transform: translateY(1px) scale(0.98); box-shadow: 0 3px 10px rgba(36,31,23,0.18); }
+  .lib-fab.scan { background: var(--brick); color: #fff; border-color: var(--brick-deep); }
+  .lib-fab.manual { background: var(--ink); color: var(--paper-raised); border-color: var(--ink); }
 
   /* ---------- Modal ---------- */
   .lib-overlay {
@@ -259,6 +272,7 @@
     border-radius: 14px 14px 0 0;
     border-top: 3px solid var(--ink);
     padding: 20px 20px 28px;
+    box-shadow: 0 -8px 30px rgba(36,31,23,0.25);
   }
   .lib-modal-head {
     display: flex; justify-content: space-between; align-items: center;
@@ -361,7 +375,7 @@
 
   @media (max-width: 420px) {
     .lib-title { font-size: 22px; }
-    .lib-fab { padding: 12px 16px; font-size: 13.5px; }
+    .lib-fab { padding: 15px 12px; font-size: 15px; }
   }
 </style>
 </head>
@@ -394,7 +408,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script>
 (function(){
-  const DEFAULT_TAGS = ["Kids","Adults","All Ages","Fiction","Non-Fiction","Fantasy","Sci-Fi","Mystery","Adventure","Picture Book","Comics","Biography","Reference","Poetry"];
+  const DEFAULT_TAGS = ["Kids","Young Adult","Adults","All Ages","Fiction","Non-Fiction","Fantasy","Sci-Fi","Mystery","Thriller","Romance","Horror","Adventure","Picture Book","Comics","Biography","History","Self-Help","Cooking","Business","Travel","Humor","Classics","Religion","Health","Reference","Poetry"];
   const STORAGE_KEY = "library-data";
 
   let state = { books: [], customTags: [] };
@@ -541,6 +555,20 @@
     const initial = book || prefill || null;
     const initialTags = book ? book.tags : ((prefill && prefill.tags) || []);
     const hasAutoTags = initialTags.length > 0;
+    const coverUrl = initial ? (initial.cover || '') : '';
+
+    const titleAuthorFields = `
+      <label class="lib-label">TITLE</label>
+      <input class="lib-input" id="mm-title" type="text" value="${initial ? escapeAttr(initial.title||'') : ''}" placeholder="e.g. The Wind in the Willows">
+      <label class="lib-label" style="margin-top:10px;">AUTHOR</label>
+      <input class="lib-input" id="mm-author" type="text" value="${initial ? escapeAttr(initial.author||'') : ''}" placeholder="e.g. Kenneth Grahame">`;
+
+    const titleAuthorBlock = coverUrl
+      ? `<div class="lib-field" style="display:flex; gap:12px; align-items:flex-start;">
+           <img src="${escapeAttr(coverUrl)}" alt="" style="width:64px;height:90px;object-fit:cover;border-radius:4px;border:1px solid var(--line);flex-shrink:0;">
+           <div style="flex:1; min-width:0;">${titleAuthorFields}</div>
+         </div>`
+      : `<div class="lib-field">${titleAuthorFields}</div>`;
 
     const overlay = document.createElement('div');
     overlay.className = 'lib-overlay';
@@ -550,17 +578,10 @@
           <h2 class="lib-modal-title lib-serif">${book ? 'Edit book' : 'Add a book'}</h2>
           <button class="lib-close" id="mm-close">✕</button>
         </div>
-        <div class="lib-field">
-          <label class="lib-label">TITLE</label>
-          <input class="lib-input" id="mm-title" type="text" value="${initial ? escapeAttr(initial.title||'') : ''}" placeholder="e.g. The Wind in the Willows">
-        </div>
-        <div class="lib-field">
-          <label class="lib-label">AUTHOR</label>
-          <input class="lib-input" id="mm-author" type="text" value="${initial ? escapeAttr(initial.author||'') : ''}" placeholder="e.g. Kenneth Grahame">
-        </div>
-        <div class="lib-field" id="mm-cat-field" ${hasAutoTags ? '' : 'style="display:none;"'}>
-          <label class="lib-label">CATEGORIES</label>
-          ${hasAutoTags ? `<p class="lib-category-text">Suggested categories (click to change):</p>` : ''}
+        ${titleAuthorBlock}
+        <div class="lib-field" id="mm-cat-field">
+          <label class="lib-label">CATEGORIES (choose any that apply)</label>
+          ${hasAutoTags ? `<p class="lib-category-text">Suggested categories — tap to change:</p>` : ''}
           <div class="lib-tagpicker" id="mm-tags"></div>
           <p class="lib-category-text">Add more (comma or space-separated):</p>
           <div class="lib-addtag-row">
@@ -595,7 +616,7 @@
       const input = $('#mm-newtag', overlay);
       const val = input.value.trim();
       if (!val) return;
-      
+
       const tags = val.split(/[,\s]+/).filter(t => t.trim());
       tags.forEach(tag => {
         const trimmed = tag.trim();
@@ -606,7 +627,7 @@
           selectedTags.add(trimmed);
         }
       });
-      
+
       input.value = '';
       renderTagPicker();
     });
@@ -624,9 +645,8 @@
         const b = state.books.find(x => x.id === editingId);
         b.title = title; b.author = author; b.tags = tags;
       } else {
-        // CHECK FOR DUPLICATES
-        const isDuplicate = state.books.some(b => 
-          b.title.toLowerCase() === title.toLowerCase() && 
+        const isDuplicate = state.books.some(b =>
+          b.title.toLowerCase() === title.toLowerCase() &&
           b.author.toLowerCase() === author.toLowerCase()
         );
         if (isDuplicate) {
@@ -660,49 +680,65 @@
     }
   }
 
-  function deriveTagsFromGoogleBooks(info){
+  /* Shared genre/age keyword matcher — takes an array of raw category/subject
+     strings (which may themselves contain multiple slash-separated segments,
+     e.g. "Juvenile Fiction / Animals / Dogs") and returns matching tags. */
+  function matchTagsFromText(rawStrings){
     const tags = new Set();
-    (info.categories || []).forEach(raw => {
-      const c = raw.toLowerCase();
-      if (c.includes('juvenile') || c.includes('young adult') || c.includes('children')) tags.add('Kids');
-      if (c.includes('picture book')) tags.add('Picture Book');
-      if (c.includes('fantasy')) tags.add('Fantasy');
-      if (c.includes('science fiction') || c.includes('sci-fi')) tags.add('Sci-Fi');
-      if (c.includes('mystery') || c.includes('detective') || c.includes('thriller')) tags.add('Mystery');
-      if (c.includes('biography') || c.includes('autobiography')) tags.add('Biography');
-      if (c.includes('comic') || c.includes('graphic novel')) tags.add('Comics');
-      if (c.includes('poetry')) tags.add('Poetry');
-      if (c.includes('reference')) tags.add('Reference');
-      if (c.includes('adventure')) tags.add('Adventure');
-      if (c.includes('nonfiction') || c.includes('non-fiction')) tags.add('Non-Fiction');
-      else if (c.includes('fiction')) tags.add('Fiction');
+    const segments = [];
+    (rawStrings || []).forEach(raw => {
+      if (!raw) return;
+      raw.split('/').forEach(part => {
+        const p = part.trim().toLowerCase();
+        if (p) segments.push(p);
+      });
     });
+
+    segments.forEach(s => {
+      if (s.includes('juvenile') || s.includes('children') || s.includes('kids') || s.includes('picture book') || s.includes('early reader') || s.includes('beginner reader')) tags.add('Kids');
+      if (s.includes('young adult') || s === 'ya' || s.includes('teen')) tags.add('Young Adult');
+      if (s.includes('picture book')) tags.add('Picture Book');
+      if (s.includes('fantasy') || s.includes('magic') || s.includes('dragon') || s.includes('fairy tale')) tags.add('Fantasy');
+      if (s.includes('science fiction') || s.includes('sci-fi') || s.includes('sci fi') || s.includes('dystopia')) tags.add('Sci-Fi');
+      if (s.includes('mystery') || s.includes('detective') || s.includes('crime')) tags.add('Mystery');
+      if (s.includes('thriller') || s.includes('suspense')) tags.add('Thriller');
+      if (s.includes('romance') || s.includes('love stor')) tags.add('Romance');
+      if (s.includes('horror') || s.includes('ghost stor') || s.includes('supernatural')) tags.add('Horror');
+      if (s.includes('adventure')) tags.add('Adventure');
+      if (s.includes('biography') || s.includes('autobiograph') || s.includes('memoir')) tags.add('Biography');
+      if (s.includes('comic') || s.includes('graphic novel') || s.includes('manga')) tags.add('Comics');
+      if (s.includes('poetry') || s.includes('poems')) tags.add('Poetry');
+      if (s.includes('history') || s.includes('historical')) tags.add('History');
+      if (s.includes('self-help') || s.includes('self help') || s.includes('personal growth') || s.includes('motivation')) tags.add('Self-Help');
+      if (s.includes('cook') || s.includes('recipe') || s.includes('food & wine') || s.includes('culinary')) tags.add('Cooking');
+      if (s.includes('business') || s.includes('economics') || s.includes('finance') || s.includes('management')) tags.add('Business');
+      if (s.includes('travel')) tags.add('Travel');
+      if (s.includes('humor') || s.includes('comedy') || s.includes('funny')) tags.add('Humor');
+      if (s.includes('classic')) tags.add('Classics');
+      if (s.includes('religio') || s.includes('spiritual') || s.includes('bible') || s.includes('faith')) tags.add('Religion');
+      if (s.includes('health') || s.includes('fitness') || s.includes('wellness') || s.includes('nutrition')) tags.add('Health');
+      if (s.includes('reference') || s.includes('encyclopedia') || s.includes('dictionary')) tags.add('Reference');
+      if (s.includes('nonfiction') || s.includes('non-fiction')) tags.add('Non-Fiction');
+      else if (s.includes('fiction') || s.includes('novel') || s.includes('literature')) tags.add('Fiction');
+    });
+
+    if (segments.length > 0 && !tags.has('Fiction') && !tags.has('Non-Fiction') &&
+        (tags.has('Biography') || tags.has('History') || tags.has('Self-Help') || tags.has('Cooking') || tags.has('Business') || tags.has('Travel') || tags.has('Health') || tags.has('Religion') || tags.has('Reference'))) {
+      tags.add('Non-Fiction');
+    }
+    return tags;
+  }
+
+  function deriveTagsFromGoogleBooks(info){
+    const raw = info.categories || [];
+    const tags = matchTagsFromText(raw);
     if (info.maturityRating === 'MATURE') tags.add('Adults');
     return Array.from(tags);
   }
 
   function deriveTagsFromOpenLibrary(doc){
-    const tags = new Set();
-    const subjects = doc.subject || [];
-    
-    subjects.forEach(subject => {
-      const s = subject.toLowerCase();
-      if (s.includes('juvenile') || s.includes('children') || s.includes('young adult')) tags.add('Kids');
-      if (s.includes('picture book')) tags.add('Picture Book');
-      if (s.includes('fantasy')) tags.add('Fantasy');
-      if (s.includes('science fiction') || s.includes('sci fi')) tags.add('Sci-Fi');
-      if (s.includes('mystery') || s.includes('detective') || s.includes('thriller')) tags.add('Mystery');
-      if (s.includes('biography') || s.includes('autobiograph')) tags.add('Biography');
-      if (s.includes('comic') || s.includes('graphic novel')) tags.add('Comics');
-      if (s.includes('poetry') || s.includes('poems')) tags.add('Poetry');
-      if (s.includes('reference')) tags.add('Reference');
-      if (s.includes('adventure')) tags.add('Adventure');
-    });
-    
-    if (subjects.length > 0 && !tags.has('Non-Fiction') && !tags.has('Fiction')) {
-      tags.add('Non-Fiction');
-    }
-    
+    const subjects = (doc.subjects || []).map(s => typeof s === 'string' ? s : (s && s.name) || '');
+    const tags = matchTagsFromText(subjects);
     return Array.from(tags);
   }
 
@@ -746,13 +782,13 @@
   async function lookupIsbn(isbn, statusEl){
     statusEl.textContent = 'Looking up book…';
     statusEl.className = 'lib-lookup-status';
-    
+
     let result = await lookupIsbnGoogle(isbn);
-    
+
     if (!result) {
       result = await lookupIsbnOpenLibrary(isbn);
     }
-    
+
     if (result && result.title) {
       statusEl.textContent = result.tags.length
         ? `Found on ${result.source} — categories auto-populated.`
