@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home Library</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,500&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600[...]
 
   #lib-root {
     --paper: #EFE7D6;
@@ -658,9 +658,32 @@
     return Array.from(tags);
   }
 
-  async function lookupIsbn(isbn, statusEl){
-    statusEl.textContent = 'Looking up book…';
-    statusEl.className = 'lib-lookup-status';
+  function deriveTagsFromOpenLibrary(doc){
+    const tags = new Set();
+    const subjects = doc.subject || [];
+    
+    subjects.forEach(subject => {
+      const s = subject.toLowerCase();
+      if (s.includes('juvenile') || s.includes('children') || s.includes('young adult')) tags.add('Kids');
+      if (s.includes('picture book')) tags.add('Picture Book');
+      if (s.includes('fantasy')) tags.add('Fantasy');
+      if (s.includes('science fiction') || s.includes('sci fi')) tags.add('Sci-Fi');
+      if (s.includes('mystery') || s.includes('detective') || s.includes('thriller')) tags.add('Mystery');
+      if (s.includes('biography') || s.includes('autobiograph')) tags.add('Biography');
+      if (s.includes('comic') || s.includes('graphic novel')) tags.add('Comics');
+      if (s.includes('poetry') || s.includes('poems')) tags.add('Poetry');
+      if (s.includes('reference')) tags.add('Reference');
+      if (s.includes('adventure')) tags.add('Adventure');
+    });
+    
+    if (subjects.length > 0 && !tags.has('Non-Fiction') && !tags.has('Fiction')) {
+      tags.add('Non-Fiction');
+    }
+    
+    return Array.from(tags);
+  }
+
+  async function lookupIsbnGoogle(isbn){
     try {
       const resp = await fetch(`https://www.googleapis.com/books/v1/volumes?q=isbn:${encodeURIComponent(isbn)}`);
       const data = await resp.json();
@@ -670,20 +693,55 @@
         const author = (info.authors || []).join(', ');
         const cover = info.imageLinks ? (info.imageLinks.thumbnail || info.imageLinks.smallThumbnail || '') : '';
         const tags = deriveTagsFromGoogleBooks(info);
-        statusEl.textContent = tags.length
-          ? 'Found it — categories suggested below, adjust as needed.'
-          : 'Found it — check the details below.';
-        statusEl.className = 'lib-lookup-status ok';
-        return { title, author, cover, isbn, tags };
-      } else {
-        statusEl.textContent = "Couldn't find that ISBN — enter the details manually below.";
-        statusEl.className = 'lib-lookup-status err';
-        return { title: '', author: '', cover: '', isbn, tags: [] };
+        return { title, author, cover, isbn, tags, source: 'Google Books' };
       }
     } catch(e) {
-      statusEl.textContent = "Lookup failed — enter the details manually below.";
+      console.error("Google Books lookup failed:", e);
+    }
+    return null;
+  }
+
+  async function lookupIsbnOpenLibrary(isbn){
+    try {
+      const resp = await fetch(`https://openlibrary.org/api/books?bibkeys=ISBN:${encodeURIComponent(isbn)}&jscmd=data&format=json`);
+      const data = await resp.json();
+      const key = `ISBN:${isbn}`;
+      if (data[key]) {
+        const doc = data[key];
+        const title = doc.title || '';
+        const author = (doc.authors || []).map(a => a.name).join(', ');
+        const cover = doc.cover ? doc.cover.medium : '';
+        const tags = deriveTagsFromOpenLibrary(doc);
+        return { title, author, cover, isbn, tags, source: 'Open Library' };
+      }
+    } catch(e) {
+      console.error("Open Library lookup failed:", e);
+    }
+    return null;
+  }
+
+  async function lookupIsbn(isbn, statusEl){
+    statusEl.textContent = 'Looking up book…';
+    statusEl.className = 'lib-lookup-status';
+    
+    // Try Google Books first
+    let result = await lookupIsbnGoogle(isbn);
+    
+    // If Google Books fails, try Open Library
+    if (!result) {
+      result = await lookupIsbnOpenLibrary(isbn);
+    }
+    
+    if (result && result.title) {
+      statusEl.textContent = result.tags.length
+        ? `Found on ${result.source} — categories suggested below, adjust as needed.`
+        : `Found on ${result.source} — check the details below.`;
+      statusEl.className = 'lib-lookup-status ok';
+      return result;
+    } else {
+      statusEl.textContent = "Couldn't find that ISBN in Google Books or Open Library — enter the details manually below.";
       statusEl.className = 'lib-lookup-status err';
-      return { title: '', author: '', cover: '', isbn, tags: [] };
+      return { title: '', author: '', cover: '', isbn, tags: [], source: 'Manual' };
     }
   }
 
